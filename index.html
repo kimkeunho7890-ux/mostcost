@@ -61,10 +61,11 @@
             .sc-2 { left: 180px; min-width: 50px; max-width: 50px; font-size: 12px; }
         }
 
+        /* 💡 TOP 스크롤 버튼 (하단 데이터를 가리지 않도록 위로 90px 올림) */
         #scrollTopBtn {
             display: none;
             position: fixed;
-            bottom: 25px;
+            bottom: 90px; /* 여기를 25px에서 90px로 수정했습니다! */
             right: 20px;
             width: 52px;
             height: 52px;
@@ -86,13 +87,13 @@
         #scrollTopBtn:hover { transform: scale(1.05); }
         #scrollTopBtn i { font-size: 18px; }
 
-        /* 💡 워터마크 오버레이 스타일 (포인터 이벤트 차단으로 클릭 방해 없음) */
+        /* 워터마크 오버레이 스타일 */
         #watermark-overlay {
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             pointer-events: none;
-            z-index: 9000; /* 모달보다는 아래, 컨텐츠보다는 위에 배치 */
+            z-index: 9000;
             background-repeat: repeat;
         }
     </style>
@@ -112,7 +113,6 @@
         </div>
     </div>
 
-    <!-- 💡 화면 전체를 덮는 워터마크 컨테이너 -->
     <div id="watermark-overlay"></div>
 
     <div id="main-app" class="app-container">
@@ -467,7 +467,7 @@
         window.proceedLogout = () => {
             localStorage.removeItem('loginStoreMobile');
             currentStore = null;
-            document.getElementById('watermark-overlay').style.display = 'none'; // 로그아웃 시 워터마크 숨김
+            document.getElementById('watermark-overlay').style.display = 'none'; 
             document.getElementById('main-app').style.display = 'none';
             document.getElementById('login-screen').style.display = 'flex';
         };
@@ -477,7 +477,6 @@
             document.getElementById('main-app').style.display = 'flex';
             document.getElementById('txt-user-name').innerHTML = `<b>${currentStore.storeName}</b>`;
             
-            // 💡 로그인 시 계정(ID) 기반으로 워터마크 동적 생성 및 표시
             const userId = currentStore.userId || currentStore.id || 'User';
             const svgWatermark = `<svg xmlns="http://www.w3.org/2000/svg" width="220" height="150" viewBox="0 0 220 150">
                 <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="rgba(0,0,0,0.06)" font-size="16" font-weight="800" font-family="sans-serif" transform="rotate(-30 110 75)">
