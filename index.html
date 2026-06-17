@@ -85,6 +85,16 @@
         }
         #scrollTopBtn:hover { transform: scale(1.05); }
         #scrollTopBtn i { font-size: 18px; }
+
+        /* 💡 워터마크 오버레이 스타일 (포인터 이벤트 차단으로 클릭 방해 없음) */
+        #watermark-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 9000; /* 모달보다는 아래, 컨텐츠보다는 위에 배치 */
+            background-repeat: repeat;
+        }
     </style>
 </head>
 <body>
@@ -102,11 +112,13 @@
         </div>
     </div>
 
+    <!-- 💡 화면 전체를 덮는 워터마크 컨테이너 -->
+    <div id="watermark-overlay"></div>
+
     <div id="main-app" class="app-container">
         <header class="navbar">
             <div class="brand"><i class="fa-solid fa-table-list" style="color:var(--primary)"></i> 실시간 단가표</div>
             <div class="user-info">
-                <!-- 💡 그룹명([A] 등) 노출 삭제 -->
                 <span id="txt-user-name" style="color:#334155; font-size:13px;"></span>
                 <button class="btn btn-outline" style="padding: 6px; font-size: 11px;" onclick="proceedLogout()">로그아웃</button>
             </div>
@@ -159,13 +171,11 @@
         </div>
     </div>
 
-    <!-- TOP 버튼 -->
     <button id="scrollTopBtn" onclick="scrollToTop()">
         <i class="fa-solid fa-arrow-up"></i>
         TOP
     </button>
 
-    <!-- 이통사지원금 모달 팝업 -->
     <div id="subsidy-modal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; padding:20px;">
         <div style="background:white; width:100%; max-width:400px; border-radius:16px; padding:25px; max-height:80vh; display:flex; flex-direction:column; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
@@ -457,15 +467,28 @@
         window.proceedLogout = () => {
             localStorage.removeItem('loginStoreMobile');
             currentStore = null;
+            document.getElementById('watermark-overlay').style.display = 'none'; // 로그아웃 시 워터마크 숨김
             document.getElementById('main-app').style.display = 'none';
             document.getElementById('login-screen').style.display = 'flex';
         };
 
-        // 💡 로그인 시 상단에 표시되는 그룹 정보 삭제 적용
         async function showMainApp() {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'flex';
             document.getElementById('txt-user-name').innerHTML = `<b>${currentStore.storeName}</b>`;
+            
+            // 💡 로그인 시 계정(ID) 기반으로 워터마크 동적 생성 및 표시
+            const userId = currentStore.userId || currentStore.id || 'User';
+            const svgWatermark = `<svg xmlns="http://www.w3.org/2000/svg" width="220" height="150" viewBox="0 0 220 150">
+                <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="rgba(0,0,0,0.06)" font-size="16" font-weight="800" font-family="sans-serif" transform="rotate(-30 110 75)">
+                    ${userId}
+                </text>
+            </svg>`;
+            const encodedSVG = btoa(unescape(encodeURIComponent(svgWatermark)));
+            const watermarkOverlay = document.getElementById('watermark-overlay');
+            watermarkOverlay.style.backgroundImage = `url('data:image/svg+xml;base64,${encodedSVG}')`;
+            watermarkOverlay.style.display = 'block';
+
             await fetchVersions(); 
             loadStorePrices(); 
         }
