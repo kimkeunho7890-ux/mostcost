@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>모바일 단가표 시스템</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        :root { --primary: #3b82f6; --bg: #f4f6f8; --text-main: #1e293b; --text-sub: #64748b; --border: #e2e8f0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Pretendard', sans-serif; background-color: var(--bg); color: var(--text-main); -webkit-font-smoothing: antialiased; }
+
+        .btn { padding: 12px 20px; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3); }
+        .btn-outline { background: white; border: 1px solid var(--border); color: var(--text-main); }
+        .form-control { width: 100%; padding: 12px 15px; border: 1px solid var(--border); border-radius: 10px; outline: none; font-size: 16px; background: white; }
+        
+        .login-wrapper { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%); }
+        .login-card { background: white; padding: 40px 30px; border-radius: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        .login-title { font-size: 26px; font-weight: 800; text-align: center; color: var(--primary); margin-bottom: 30px; }
+        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 13px; font-weight: 700; color: var(--text-sub); margin-left: 5px; }
+
+        .app-container { display: none; flex-direction: column; height: 100vh; overflow: hidden; }
+        .navbar { height: 60px; background: white; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 20; flex-shrink: 0; }
+        .main-content { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        
+        .chip-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .chip-btn { padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; border: 1px solid var(--border); background: white; color: var(--text-sub); cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        .chip-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 2px 4px rgba(59,130,246,0.3); }
+
+        .filter-card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 15px; }
+        
+        .tab-container { display: flex; background: white; border-radius: 12px; padding: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+        .tab-btn { flex: 1; padding: 12px 10px; font-size: 14px; font-weight: 700; color: var(--text-sub); background: none; border: none; cursor: pointer; transition: 0.2s; border-radius: 8px; }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 4px rgba(59,130,246,0.2); }
+
+        .table-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); flex: 1; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); }
+        .table-scroll-wrapper { overflow: auto; flex: 1; -webkit-overflow-scrolling: touch; background: #ffffff; } 
+        table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
+        
+        thead th { position: sticky; top: 0; z-index: 20; background: #f1f5f9 !important; border-bottom: 1px solid var(--border); box-shadow: 0 1px 0 var(--border); font-size: 13px; font-weight: 800; color: #334155; height: 40px; }
+        thead tr:nth-child(2) th { top: 40px; background: #f8fafc !important; font-size: 12px; z-index: 19; }
+        
+        td, th { padding: 10px 8px; text-align: center; border-right: 1px solid var(--border); }
+        td { border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 700; color: #0f172a; }
+
+        .sticky-col { position: sticky; z-index: 5; background-color: inherit; }
+        thead th.sticky-col { z-index: 30 !important; } 
+        .sc-1 { left: 0; border-right: 1px solid var(--border); text-align: left; padding-left: 12px; }
+        .sc-2 { border-right: 2px solid #cbd5e1; }
+
+        .sc-1 { min-width: 140px; max-width: 140px; }
+        .sc-2 { left: 140px; min-width: 45px; max-width: 45px; font-size: 11px; padding: 0 4px; }
+        
+        @media (min-width: 768px) {
+            .sc-1 { min-width: 170px; max-width: 170px; padding-left: 15px; }
+            .sc-2 { left: 170px; min-width: 50px; max-width: 50px; font-size: 12px; }
+        }
+
+        .m-name { font-weight: 800; font-size: 13px; color: #1e293b; white-space: pre-wrap; word-break: break-all; }
+        .m-pet { font-size: 11px; color: #64748b; margin-top: 2px; line-height: 1.1; }
+        .m-price { font-size: 12px; color: var(--primary); font-weight: 700; margin-top: 4px; }
+        .type-gong { color: #ef4444 !important; font-size: 12px; }
+        .type-sun { color: #0284c7 !important; font-size: 12px; }
+        .empty-val { color: #cbd5e1; font-weight: 400; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="login-wrapper">
+        <div class="login-card">
+            <div class="login-title"><i class="fa-solid fa-mobile-screen"></i> 단가표 조회</div>
+            <div class="form-group">
+                <label>아이디</label><input type="text" id="login-id" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>비밀번호</label><input type="password" id="login-pw" class="form-control" onkeyup="if(event.key==='Enter') proceedLogin()">
+            </div>
+            <button class="btn btn-primary" style="margin-top: 10px;" onclick="proceedLogin()">로그인</button>
+        </div>
+    </div>
+
+    <div id="main-app" class="app-container">
+        <header class="navbar">
+            <div class="brand"><i class="fa-solid fa-table-list" style="color:var(--primary)"></i> 실시간 단가표</div>
+            <div class="user-info">
+                <span id="txt-user-name" style="color:#334155; font-size:13px;"></span>
+                <button class="btn btn-outline" style="padding: 6px; font-size: 11px;" onclick="proceedLogout()">로그아웃</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="tab-container">
+                <button id="tab-search" class="tab-btn active" onclick="switchViewMode('search')"><i class="fa-solid fa-magnifying-glass"></i> 맞춤 검색보기</button>
+                <button id="tab-table" class="tab-btn" onclick="switchViewMode('table')"><i class="fa-solid fa-table"></i> 전체 단가표보기</button>
+            </div>
+
+            <div class="filter-card">
+                <div class="form-group" style="margin:0;">
+                    <label>적용 시점 (과거 조회 가능)</label>
+                    <select id="version-select" class="form-control" style="font-weight:bold; color:var(--primary); background-color:#f0f9ff; border-color:var(--primary);" onchange="loadStorePrices()">
+                        <option value="">버전을 로딩 중입니다...</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin:0; border-top: 1px dashed var(--border); padding-top: 15px;">
+                    <label><i class="fa-solid fa-mobile-screen-button"></i> 기기 모델 검색 / 선택</label>
+                    <input type="text" id="search-model" class="form-control" placeholder="모델명/펫네임 직접 입력..." oninput="handleTextSearch()">
+                    <div class="chip-container" id="model-btn-container"></div>
+                </div>
+
+                <div class="form-group" id="plan-chip-area" style="margin:0; border-top: 1px dashed var(--border); padding-top: 15px;">
+                    <label><i class="fa-solid fa-layer-group"></i> 요금제군 선택</label>
+                    <div class="chip-container" id="plan-btn-container"></div>
+                </div>
+                
+                <div style="display:flex; gap:10px; margin-top:5px;">
+                    <button class="btn btn-outline" style="flex:1; height:40px; font-size:13px;" onclick="resetFilters()"><i class="fa-solid fa-rotate-left"></i> 초기화</button>
+                    <button class="btn btn-outline" style="flex:1; height:40px; font-size:13px; color:var(--primary); border-color:var(--primary);" onclick="forceRefreshCache()"><i class="fa-solid fa-cloud-arrow-down"></i> 동기화</button>
+                </div>
+            </div>
+
+            <div class="table-card">
+                <div class="table-scroll-wrapper">
+                    <table>
+                        <thead id="matrix-thead"></thead>
+                        <tbody id="matrix-tbody">
+                            <tr><td colspan="5" style="padding:40px; text-align:center; color:#94a3b8;">원하시는 기기와 요금제를 선택해주세요.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="subsidy-modal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+        <div style="background:white; width:100%; max-width:400px; border-radius:16px; padding:25px; max-height:80vh; display:flex; flex-direction:column; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+                <div>
+                    <h3 id="sub-modal-title" style="margin:0; color:var(--primary); font-size:18px; font-weight:800;">공시지원금</h3>
+                    <div id="sub-modal-subtitle" style="font-size:12px; color:var(--text-sub); margin-top:4px;"></div>
+                </div>
+                <button onclick="closeSubsidyModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#94a3b8;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div style="overflow-y:auto; flex:1; border:1px solid #e2e8f0; border-radius:8px;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th style="background:#f8fafc; padding:10px; border-bottom:2px solid #cbd5e1; font-size:12px; position:sticky; top:0; z-index:2; text-align:left;">요금제명</th>
+                            <th style="background:#f8fafc; padding:10px; border-bottom:2px solid #cbd5e1; font-size:12px; position:sticky; top:0; z-index:2; text-align:right;">지원금(만)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sub-modal-body"></tbody>
+                </table>
+            </div>
+            <button class="btn btn-primary" style="margin-top:15px; width:100%;" onclick="closeSubsidyModal()">닫기</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAJ3qU8BFAhgm8ofsczyWguR_Wt9JwS0C4",
+            authDomain: "cost-admin-beec1.firebaseapp.com",
+            projectId: "cost-admin-beec1",
+            storageBucket: "cost-admin-beec1.firebasestorage.app",
+            messagingSenderId: "881454925672",
+            appId: "1:881454925672:web:febc03996629f7206738dd"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let currentStore = null;
+        let allFetchedPolicies = [];
+        let allModelsMap = {}; 
+        let allPlanGroups = []; 
+        let versionList = []; 
+        
+        let currentViewMode = 'search'; 
+        let selectedModelGroup = null; 
+        let selectedPlanGroup = null; 
+
+        // 💡 이통사지원금 전역 변수
+        let subsidyMap = {}; 
+        let subsidyHeaders = [];
+
+        const QUICK_MODELS = {
+            "S26류": ["S94", "S26"], 
+            "Iphone17": ["IPHONE 17", "IPHONE17", "아이폰17", "아이폰 17"],
+            "버디5": ["버디5", "BUDDY5"],
+            "버디4": ["버디4", "BUDDY4"],
+            "버디3": ["버디3", "BUDDY3"],
+            "플립7": ["플립7", "F74", "FLIP7", "FLIP 7"],
+            "폴드7": ["폴드7", "F96", "FOLD7", "FOLD 7"],
+            "M140": ["M140"],
+            "무너2": ["무너2", "무너 2"]
+        };
+
+        const CACHE_KEY = 'masterDataCacheV5'; 
+        const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000;
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            renderModelChips(); 
+            
+            // 💡 앱 로딩 시 이통사지원금 CSV를 함께 읽어옵니다.
+            await Promise.all([loadMasterDataWithCache(), loadSubsidyData()]);
+            
+            const savedStore = localStorage.getItem('loginStoreMobile');
+            if (savedStore) {
+                currentStore = JSON.parse(savedStore);
+                showMainApp();
+            }
+        });
+
+        // 💡 이통사지원금 CSV 로드 및 파싱 함수
+        async function loadSubsidyData() {
+            try {
+                // 바탕화면에서 더블클릭해서 연 경우 차단 경고
+                if (window.location.protocol === 'file:') {
+                    console.warn("로컬 환경(바탕화면)에서는 브라우저 보안으로 인해 CSV 파일을 읽을 수 없습니다. 깃허브에 배포 후 확인해주세요.");
+                    return;
+                }
+
+                // 💡 깃허브 캐시를 강제로 무시하고 항상 최신 파일을 가져오도록 URL 뒤에 시간값을 붙임
+                const noCacheUrl = 'subsidy.csv?t=' + new Date().getTime();
+                const res = await fetch(noCacheUrl);
+                
+                if(!res.ok) {
+                    console.error("지원금 파일을 찾을 수 없습니다. 깃허브에 subsidy.csv 파일이 정확히 올라갔는지 확인해주세요.");
+                    return; 
+                }
+                const csvText = await res.text();
+                
+                Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        const data = results.data;
+                        subsidyHeaders = results.meta.fields.filter(f => !['가입유형', '제조사', '모델명', 'Pet Name', '출고가'].includes(f));
+                        
+                        data.forEach(row => {
+                            const modelName = String(row['모델명']).trim().toUpperCase();
+                            if(modelName && !subsidyMap[modelName]) {
+                                subsidyMap[modelName] = row;
+                            }
+                        });
+                        console.log("이통사 지원금 매핑 완료!");
+                    }
+                });
+            } catch(e) {
+                console.error("지원금 로딩 중 에러 발생:", e);
+            }
+        }
+
+        // 💡 선택된 '요금제군(예: 115군)'에 해당하는 CSV의 요금제 컬럼명과 지원금액을 찾아주는 스마트 매칭 함수
+        function getSubsidyForPlan(modelName, planGroup) {
+            if(!subsidyMap[modelName] || subsidyHeaders.length === 0) return null;
+            
+            const num = planGroup.replace(/[^0-9]/g, '');
+            let matchedHeader = null;
+
+            // 1순위: 그룹명 안의 숫자(예: 115)가 포함된 컬럼 찾기 (플러스플랜115 등)
+            if(num) matchedHeader = subsidyHeaders.find(h => h.includes(num));
+
+            // 2순위: 통신사별 대표 요금제 예외 매핑 (CSV 구조에 맞춘 유연한 처리)
+            if(!matchedHeader) {
+                if(planGroup.includes('85')) matchedHeader = subsidyHeaders.find(h => h.includes('MAX') || h.includes('85'));
+                else if(planGroup.includes('75')) matchedHeader = subsidyHeaders.find(h => h.includes('150GB') || h.includes('75'));
+                else if(planGroup.includes('69')) matchedHeader = subsidyHeaders.find(h => h.includes('125GB') || h.includes('100GB') || h.includes('69'));
+                else if(planGroup.includes('61')) matchedHeader = subsidyHeaders.find(h => h.includes('95GB') || h.includes('80GB') || h.includes('61'));
+                else if(planGroup.includes('55')) matchedHeader = subsidyHeaders.find(h => h.includes('50GB') || h.includes('55'));
+                else if(planGroup.includes('44')) matchedHeader = subsidyHeaders.find(h => h.includes('31GB') || h.includes('24GB'));
+                else if(planGroup.includes('33')) matchedHeader = subsidyHeaders.find(h => h.includes('14GB') || h.includes('9GB') || h.includes('33'));
+                else if(planGroup.includes('시니어')) matchedHeader = subsidyHeaders.find(h => h.includes('시니어'));
+                else if(planGroup.includes('키즈')) matchedHeader = subsidyHeaders.find(h => h.includes('키즈'));
+            }
+
+            // 3순위: 다 못 찾으면 제일 비싼 대표 요금제(첫번째 컬럼) 표출
+            if(!matchedHeader) matchedHeader = subsidyHeaders[0];
+
+            if(!matchedHeader) return null;
+
+            const amt = Number(subsidyMap[modelName][matchedHeader]) || 0;
+            return { name: matchedHeader, amount: amt };
+        }
+
+        // 💡 팝업 모달창 제어
+        window.openSubsidyModal = (mName) => {
+            const data = subsidyMap[mName];
+            if(!data) return;
+            document.getElementById('sub-modal-title').innerText = mName;
+            document.getElementById('sub-modal-subtitle').innerText = '요금제별 공시지원금';
+            
+            let rows = '';
+            subsidyHeaders.forEach(h => {
+                const amt = Number(data[h]) || 0;
+                rows += `<tr>
+                    <td style="padding:10px; font-size:13px; border-bottom:1px solid #e2e8f0; text-align:left;">${h}</td>
+                    <td style="padding:10px; font-size:13px; font-weight:bold; border-bottom:1px solid #e2e8f0; color:#ef4444; text-align:right;">${amt > 0 ? (amt/10000).toLocaleString() + '만' : '-'}</td>
+                </tr>`;
+            });
+            document.getElementById('sub-modal-body').innerHTML = rows;
+            document.getElementById('subsidy-modal').style.display = 'flex';
+        };
+
+        window.closeSubsidyModal = () => {
+            document.getElementById('subsidy-modal').style.display = 'none';
+        };
+
+        function renderModelChips() {
+            const container = document.getElementById('model-btn-container');
+            container.innerHTML = '';
+            Object.keys(QUICK_MODELS).forEach(key => {
+                container.innerHTML += `<button class="chip-btn model-chip" data-val="${key}" onclick="selectModelGroup('${key}')">${key}</button>`;
+            });
+        }
+
+        async function loadMasterDataWithCache() {
+            const cachedData = localStorage.getItem(CACHE_KEY);
+            const now = Date.now();
+            if (cachedData) {
+                const parsed = JSON.parse(cachedData);
+                if (now - parsed.timestamp < CACHE_EXPIRY_MS) {
+                    allModelsMap = parsed.models;
+                    allPlanGroups = parsed.plans;
+                    renderPlanChips();
+                    return;
+                }
+            }
+            allModelsMap = {};
+            allPlanGroups = [];
+            try {
+                const mSnap = await getDocs(collection(db, "models"));
+                mSnap.forEach(d => { 
+                    const mData = d.data();
+                    if (mData.isActive !== false) allModelsMap[mData.name] = mData; 
+                });
+                const pSnap = await getDocs(collection(db, "planGroups"));
+                pSnap.forEach(d => { if(d.data().planGroupName) allPlanGroups.push(d.data().planGroupName); });
+                
+                localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: now, models: allModelsMap, plans: allPlanGroups }));
+                renderPlanChips();
+            } catch(e) { console.error(e); }
+        }
+
+        function renderPlanChips() {
+            const container = document.getElementById('plan-btn-container');
+            container.innerHTML = '';
+            const customOrder = ["115군", "105군", "95군", "85군", "75군", "69군", "61군", "55군", "44군", "33군", "33미만", "시니어 2군", "시니어 1군", "청소년 3군", "청소년 2군", "키즈군"];
+            const sortedPlans = [...allPlanGroups].sort((a,b) => {
+                let ia = customOrder.indexOf(a), ib = customOrder.indexOf(b);
+                if(ia===-1) ia = 999; if(ib===-1) ib = 999;
+                return ia - ib;
+            });
+
+            sortedPlans.forEach(plan => {
+                container.innerHTML += `<button class="chip-btn plan-chip" data-val="${plan}" onclick="selectPlanGroup('${plan}')">${plan}</button>`;
+            });
+        }
+
+        window.switchViewMode = (mode) => {
+            currentViewMode = mode;
+            document.getElementById('tab-search').className = mode === 'search' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('tab-table').className = mode === 'table' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('plan-chip-area').style.display = mode === 'search' ? 'block' : 'none';
+            renderResults();
+        };
+
+        window.selectModelGroup = (val) => {
+            selectedModelGroup = selectedModelGroup === val ? null : val; 
+            if(selectedModelGroup) document.getElementById('search-model').value = ''; 
+            document.querySelectorAll('.model-chip').forEach(btn => {
+                btn.className = btn.dataset.val === selectedModelGroup ? 'chip-btn model-chip active' : 'chip-btn model-chip';
+            });
+            renderResults();
+        };
+
+        window.handleTextSearch = () => {
+            selectedModelGroup = null; 
+            document.querySelectorAll('.model-chip').forEach(btn => btn.className = 'chip-btn model-chip');
+            renderResults();
+        };
+
+        window.selectPlanGroup = (val) => {
+            selectedPlanGroup = selectedPlanGroup === val ? null : val; 
+            document.querySelectorAll('.plan-chip').forEach(btn => {
+                btn.className = btn.dataset.val === selectedPlanGroup ? 'chip-btn plan-chip active' : 'chip-btn plan-chip';
+            });
+            renderResults();
+        };
+
+        window.forceRefreshCache = async () => {
+            localStorage.removeItem(CACHE_KEY);
+            await Promise.all([loadMasterDataWithCache(), loadSubsidyData()]);
+            await fetchVersions();
+            loadStorePrices();
+            alert("최신 단가표 및 모델 정보로 동기화되었습니다.");
+        };
+
+        window.proceedLogin = async () => {
+            const idVal = document.getElementById('login-id').value.trim();
+            const pwVal = document.getElementById('login-pw').value.trim();
+            if(!idVal || !pwVal) return alert("아이디와 비밀번호를 모두 입력해주세요.");
+
+            try {
+                const snap = await getDocs(collection(db, "stores"));
+                let matched = null;
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    const dbId = String(data.userId || data.id || "").trim();
+                    const dbPw = String(data.userPw || data.pw || data.password || "").trim();
+                    if (dbId.toLowerCase() === idVal.toLowerCase() && dbPw === pwVal) matched = { docId: doc.id, ...data };
+                });
+                if (matched) {
+                    currentStore = matched;
+                    localStorage.setItem('loginStoreMobile', JSON.stringify(matched));
+                    showMainApp();
+                } else { alert("아이디 또는 비밀번호가 일치하지 않습니다."); }
+            } catch(e) { alert("서버 연결 실패: " + e.message); }
+        };
+
+        window.proceedLogout = () => {
+            localStorage.removeItem('loginStoreMobile');
+            currentStore = null;
+            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+        };
+
+        async function showMainApp() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'flex';
+            document.getElementById('txt-user-name').innerHTML = `<b>${currentStore.storeName}</b> ${currentStore.group ? `[${currentStore.group}]` : ''}`;
+            await fetchVersions(); 
+            loadStorePrices(); 
+        }
+
+        async function fetchVersions() {
+            try {
+                const snap = await getDocs(collection(db, "policies"));
+                const timeSet = new Set();
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    if(data.startDate) timeSet.add(`${data.startDate}T${data.startTime || '00:00'}`);
+                });
+
+                const sortedTimes = Array.from(timeSet).sort();
+                const dateGroups = {};
+                sortedTimes.forEach(dt => {
+                    const [datePart, timePart] = dt.split('T');
+                    if(!dateGroups[datePart]) dateGroups[datePart] = [];
+                    dateGroups[datePart].push(timePart);
+                });
+
+                versionList = [];
+                Object.keys(dateGroups).sort().forEach(date => {
+                    const times = dateGroups[date];
+                    const rawDate = date.replace(/-/g, ''); 
+                    
+                    let spotCount = 1;
+                    times.forEach((time) => {
+                        let label = "";
+                        if (time === "00:00") {
+                            label = `단가표_${rawDate}~`;
+                        } else {
+                            const hour = time.split(':')[0];
+                            label = `단가표_${rawDate}-${spotCount}(${hour}시)`;
+                            spotCount++;
+                        }
+                        versionList.push({ value: `${date}T${time}`, label: label });
+                    });
+                });
+                versionList.reverse();
+
+                const select = document.getElementById('version-select');
+                select.innerHTML = versionList.length === 0 ? '<option value="">등록된 정책이 없습니다.</option>' : '';
+                versionList.forEach((v, idx) => { select.innerHTML += `<option value="${v.value}">${v.label}${idx === 0 ? " [🌟최신]" : ""}</option>`; });
+            } catch (e) { console.error("버전 로드 실패", e); }
+        }
+
+        window.loadStorePrices = async () => {
+            const selectedVal = document.getElementById('version-select').value;
+            if(!selectedVal) return;
+            
+            const [selectedDate] = selectedVal.split('T');
+            const targetFullDateTime = selectedVal;
+
+            try {
+                const snap = await getDocs(query(collection(db, "policies"), where("startDate", "<=", selectedDate)));
+                allFetchedPolicies = [];
+
+                snap.forEach(d => {
+                    const p = d.data();
+                    const pStart = `${p.startDate}T${p.startTime || '00:00'}`;
+                    const pEnd = `${p.endDate || '2099-12-31'}T${p.endTime || '23:59'}`;
+                    if (pStart <= targetFullDateTime && pEnd >= targetFullDateTime) allFetchedPolicies.push({ id: d.id, ...p });
+                });
+                renderResults(); 
+            } catch (e) { console.error("정책 로드 에러", e); }
+        };
+
+        window.renderResults = () => {
+            const thead = document.getElementById('matrix-thead');
+            const tbody = document.getElementById('matrix-tbody');
+            thead.innerHTML = ''; tbody.innerHTML = '';
+
+            const keyword = document.getElementById('search-model').value.toUpperCase().trim();
+
+            if (currentViewMode === 'search' && !selectedPlanGroup) {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding:40px; text-align:center; color:#94a3b8;"><i class="fa-solid fa-arrow-up" style="display:block; font-size:20px; margin-bottom:10px;"></i>요금제군을 선택하시면 단가가 표기됩니다.</td></tr>';
+                return;
+            }
+
+            const matchedModels = [];
+            Object.keys(allModelsMap).forEach(mName => {
+                const mInfo = allModelsMap[mName];
+                if(!mInfo || mInfo.isActive === false) return; 
+
+                let isMatch = false;
+                if (selectedModelGroup) {
+                    const queries = QUICK_MODELS[selectedModelGroup] || [];
+                    isMatch = queries.some(q => mName.toUpperCase().includes(q) || (mInfo.petName || "").toUpperCase().includes(q));
+                } else if (keyword) {
+                    isMatch = mName.toUpperCase().includes(keyword) || (mInfo.petName || "").toUpperCase().includes(keyword);
+                } else {
+                    isMatch = true; 
+                }
+
+                if(isMatch) matchedModels.push(mName);
+            });
+            matchedModels.sort();
+
+            if (matchedModels.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" style="padding:40px; text-align:center; color:#94a3b8;">조건에 맞는 모델이 없습니다.</td></tr>`;
+                return;
+            }
+
+            const targetPolicies = allFetchedPolicies.filter(p => {
+                const isAllRange = (p.isAllStores === true || p.policyGroup === 'all');
+                const hasSpecificStores = p.targetStores && p.targetStores.length > 0;
+                const isDirectStore = hasSpecificStores && p.targetStores.includes(currentStore.docId);
+                const isMatchingGroup = !hasSpecificStores && p.policyGroup && p.policyGroup !== 'all' && p.policyGroup === currentStore.group;
+                
+                if (isDirectStore) p._priority = 3;
+                else if (isMatchingGroup) p._priority = 2;
+                else if (isAllRange) p._priority = 1;
+                else p._priority = 0;
+
+                return isAllRange || isDirectStore || isMatchingGroup;
+            }).sort((a,b) => {
+                if (a._priority !== b._priority) return (a._priority || 0) - (b._priority || 0);
+                const timeA = `${a.startDate}T${a.startTime || '00:00'}`;
+                const timeB = `${b.startDate}T${b.startTime || '00:00'}`;
+                if (timeA !== timeB) return timeA.localeCompare(timeB);
+                return (a.sortIndex || 0) - (b.sortIndex || 0);
+            }); 
+
+            const customOrder = ["115군", "105군", "95군", "85군", "75군", "69군", "61군", "55군", "44군", "33군", "33미만", "시니어 2군", "시니어 1군", "청소년 3군", "청소년 2군", "키즈군"];
+            const activeColumns = [...allPlanGroups].sort((a,b) => {
+                let ia = customOrder.indexOf(a), ib = customOrder.indexOf(b);
+                if(ia===-1) ia = 999; if(ib===-1) ib = 999;
+                return ia - ib;
+            });
+
+            let matrix = {};
+            matchedModels.forEach(mName => {
+                matrix[mName] = { '공': {}, '선': {} };
+                activeColumns.forEach(g => {
+                    matrix[mName]['공'][g] = { new:0, mnp:0, chg:0 };
+                    matrix[mName]['선'][g] = { new:0, mnp:0, chg:0 };
+                });
+            });
+
+            const overwritePolicies = []; const addPolicies = [];
+            targetPolicies.forEach(p => { if (p.calcMode === 'add') addPolicies.push(p); else overwritePolicies.push(p); });
+
+            const applyMatrix = (pm, mName, opType, pPlans) => {
+                const target = matrix[mName];
+                pPlans.forEach(g => {
+                    if (!target['공'][g]) return;
+                    if (pm.isGong) {
+                        if (opType === 'overwrite') {
+                            if (Number(pm.newPrice) > 0) target['공'][g].new = Number(pm.newPrice);
+                            if (Number(pm.mnpPrice) > 0) target['공'][g].mnp = Number(pm.mnpPrice);
+                            if (Number(pm.changePrice) > 0) target['공'][g].chg = Number(pm.changePrice);
+                        } else {
+                            if (Number(pm.newPrice) !== 0) target['공'][g].new += Number(pm.newPrice);
+                            if (Number(pm.mnpPrice) !== 0) target['공'][g].mnp += Number(pm.mnpPrice);
+                            if (Number(pm.changePrice) !== 0) target['공'][g].chg += Number(pm.changePrice);
+                        }
+                    }
+                    if (pm.isSun) {
+                        if (opType === 'overwrite') {
+                            if (Number(pm.newPrice) > 0) target['선'][g].new = Number(pm.newPrice);
+                            if (Number(pm.mnpPrice) > 0) target['선'][g].mnp = Number(pm.mnpPrice);
+                            if (Number(pm.changePrice) > 0) target['선'][g].chg = Number(pm.changePrice);
+                        } else {
+                            if (Number(pm.newPrice) !== 0) target['선'][g].new += Number(pm.newPrice);
+                            if (Number(pm.mnpPrice) !== 0) target['선'][g].mnp += Number(pm.mnpPrice);
+                            if (Number(pm.changePrice) !== 0) target['선'][g].chg += Number(pm.changePrice);
+                        }
+                    }
+                });
+            };
+
+            overwritePolicies.forEach(p => {
+                if (!p.models) return; 
+                p.models.forEach(pm => {
+                    if(matrix[pm.modelName]) applyMatrix(pm, pm.modelName, 'overwrite', p.planGroups || []);
+                });
+            });
+
+            addPolicies.forEach(p => {
+                if (!p.models) return; 
+                p.models.forEach(pm => {
+                    if(matrix[pm.modelName]) applyMatrix(pm, pm.modelName, 'add', p.planGroups || []);
+                });
+            });
+
+            const formatVal = (amt) => { const val = Math.floor(amt / 10000); return val > 0 ? val.toLocaleString() : '<span class="empty-val">-</span>'; };
+            const formatRetail = (amt) => !amt ? "-" : (amt / 10000).toLocaleString() + '만';
+            const bgPalette = ['#ffffff', '#f8fafc']; 
+            let colorIdx = 0;
+
+            if (currentViewMode === 'search') {
+                thead.innerHTML = `<tr>
+                    <th class="sticky-col sc-1">모델 정보 (출고가)</th>
+                    <th class="sticky-col sc-2">유형</th>
+                    <th style="min-width:80px;">신규</th>
+                    <th style="min-width:80px;">번이</th>
+                    <th style="min-width:80px;">기변</th>
+                </tr>`;
+                
+                matchedModels.forEach(mName => {
+                    const mInfo = allModelsMap[mName];
+                    const dataGong = matrix[mName]['공'][selectedPlanGroup];
+                    const dataSun = matrix[mName]['선'][selectedPlanGroup];
+                    
+                    if (!dataGong || !dataSun) return;
+                    
+                    const totalGong = dataGong.new + dataGong.mnp + dataGong.chg;
+                    const totalSun = dataSun.new + dataSun.mnp + dataSun.chg;
+                    if(totalGong === 0 && totalSun === 0) return; 
+
+                    // 💡 [추가] 맞춤 검색 모드일 경우: 해당 요금제군의 이통사지원금 정보 가공
+                    const subData = getSubsidyForPlan(mName, selectedPlanGroup);
+                    let subHtml = '';
+                    if(subData && subData.amount > 0) {
+                        subHtml = `<div style="font-size:11px; color:#10b981; margin-top:8px; font-weight:700; background:#ecfdf5; padding:4px 6px; border-radius:6px; border:1px solid #a7f3d0; line-height:1.3;">
+                            <i class="fa-solid fa-gift"></i> 공시지원금<br>
+                            <span style="font-size:10px; color:#047857;">[${subData.name}]</span><br>
+                            <span style="color:#059669;">${(subData.amount/10000).toLocaleString()}만</span>
+                        </div>`;
+                    }
+
+                    const bgColor = bgPalette[colorIdx++ % 2]; 
+                    let trHTML = `
+                        <tr style="background:${bgColor}">
+                            <td rowspan="2" class="sticky-col sc-1 td-model-info" style="background:${bgColor}">
+                                <div class="m-name">${mName}</div>
+                                <div class="m-pet">${mInfo.petName || ''}</div>
+                                <div class="m-price">출고가: ${formatRetail(mInfo.price)}</div>
+                                ${subHtml} </td>
+                            <td class="sticky-col sc-2 type-gong" style="background:${bgColor}">공시</td>
+                            <td>${formatVal(dataGong.new)}</td><td>${formatVal(dataGong.mnp)}</td><td>${formatVal(dataGong.chg)}</td>
+                        </tr>
+                        <tr style="background:${bgColor}">
+                            <td class="sticky-col sc-2 type-sun" style="background:${bgColor}">선약</td>
+                            <td>${formatVal(dataSun.new)}</td><td>${formatVal(dataSun.mnp)}</td><td>${formatVal(dataSun.chg)}</td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML('beforeend', trHTML);
+                });
+
+                if(tbody.innerHTML === '') tbody.innerHTML = `<tr><td colspan="5" style="padding:40px; text-align:center; color:#94a3b8;">해당 요금제에 등록된 단가가 없습니다.</td></tr>`;
+            
+            } else {
+                let hRow1 = `<tr><th rowspan="2" class="sticky-col sc-1">모델 정보 (출고가)</th><th rowspan="2" class="sticky-col sc-2">유형</th>`;
+                let hRow2 = `<tr>`;
+                activeColumns.forEach(g => {
+                    hRow1 += `<th colspan="3">${g.replace(/군$/, '')}</th>`;
+                    hRow2 += `<th style="min-width:70px;">신규</th><th style="min-width:70px;">번이</th><th style="min-width:70px;">기변</th>`;
+                });
+                thead.innerHTML = hRow1 + `</tr>` + hRow2 + `</tr>`;
+
+                matchedModels.forEach(mName => {
+                    const mInfo = allModelsMap[mName];
+                    let hasPrice = false;
+                    activeColumns.forEach(g => {
+                        if (matrix[mName]['공'][g].new + matrix[mName]['공'][g].mnp + matrix[mName]['공'][g].chg > 0) hasPrice = true;
+                        if (matrix[mName]['선'][g].new + matrix[mName]['선'][g].mnp + matrix[mName]['선'][g].chg > 0) hasPrice = true;
+                    });
+                    if (!hasPrice) return;
+
+                    // 💡 [추가] 전체 단가표 모드일 경우: 팝업 버튼 노출
+                    let subBtnHtml = '';
+                    if(subsidyMap[mName]) {
+                        subBtnHtml = `<button onclick="openSubsidyModal('${mName}')" style="margin-top:8px; padding:4px 8px; font-size:10px; border-radius:6px; border:1px solid #10b981; background:#ecfdf5; color:#10b981; cursor:pointer; font-weight:800; display:flex; align-items:center; gap:4px;"><i class="fa-solid fa-list"></i> 지원금보기</button>`;
+                    }
+
+                    const bgColor = bgPalette[colorIdx++ % 2]; 
+                    let trGong = `<tr style="background:${bgColor}">
+                        <td rowspan="2" class="sticky-col sc-1 td-model-info" style="background:${bgColor}">
+                            <div class="m-name">${mName}</div>
+                            <div class="m-pet">${mInfo.petName || ''}</div>
+                            <div class="m-price">출고가: ${formatRetail(mInfo.price)}</div>
+                            ${subBtnHtml} </td>
+                        <td class="sticky-col sc-2 type-gong" style="background:${bgColor}">공시</td>`;
+                    activeColumns.forEach(g => { const vals = matrix[mName]['공'][g]; trGong += `<td>${formatVal(vals.new)}</td><td>${formatVal(vals.mnp)}</td><td>${formatVal(vals.chg)}</td>`; });
+                    trGong += `</tr>`;
+
+                    let trSun = `<tr style="background:${bgColor}"><td class="sticky-col sc-2 type-sun" style="background:${bgColor}">선약</td>`;
+                    activeColumns.forEach(g => { const vals = matrix[mName]['선'][g]; trSun += `<td>${formatVal(vals.new)}</td><td>${formatVal(vals.mnp)}</td><td>${formatVal(vals.chg)}</td>`; });
+                    trSun += `</tr>`;
+                    
+                    tbody.insertAdjacentHTML('beforeend', trGong + trSun);
+                });
+
+                if(tbody.innerHTML === '') tbody.innerHTML = `<tr><td colspan="${2 + activeColumns.length*3}" style="padding:40px; text-align:center; color:#94a3b8;">조건에 맞는 데이터가 없습니다.</td></tr>`;
+            }
+        };
+
+        window.resetFilters = () => {
+            document.getElementById('search-model').value = '';
+            selectedModelGroup = null;
+            selectedPlanGroup = null;
+            document.querySelectorAll('.model-chip, .plan-chip').forEach(btn => btn.classList.remove('active'));
+            
+            const select = document.getElementById('version-select');
+            if(select.options.length > 0) select.selectedIndex = 0; 
+            
+            loadStorePrices();
+        };
+    </script>
+</body>
+</html>
