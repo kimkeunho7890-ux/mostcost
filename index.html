@@ -45,27 +45,22 @@
         thead th { position: sticky; top: 0; z-index: 20; background: #f1f5f9 !important; border-bottom: 1px solid var(--border); box-shadow: 0 1px 0 var(--border); font-size: 13px; font-weight: 800; color: #334155; height: 40px; white-space: nowrap; }
         thead tr:nth-child(2) th { top: 40px; background: #f8fafc !important; font-size: 12px; z-index: 19; }
         
-        /* 💡 테이블 여백(Padding)을 최소화하여 가로 공간 확보 */
         td, th { padding: 10px 4px; text-align: center; border-right: 1px solid var(--border); white-space: nowrap; }
         td { border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 700; color: #0f172a; }
 
         .sticky-col { position: sticky; z-index: 5; background-color: inherit; }
         thead th.sticky-col { z-index: 30 !important; } 
-        /* 💡 모델 정보칸 내부 여백 압축 */
         .sc-1 { left: 0; border-right: 1px solid var(--border); text-align: left; padding-left: 8px !important; padding-right: 4px !important; }
         .sc-2 { border-right: 2px solid #cbd5e1; }
 
-        /* 💡 핵심: 모델명 칸 넓이를 145px로 줄여 모바일 한 화면 핏 맞춤 */
         .sc-1 { min-width: 145px; max-width: 145px; white-space: normal; } 
         .sc-2 { left: 145px; min-width: 40px; max-width: 40px; font-size: 11px; padding: 0 4px !important; }
         
-        /* 태블릿/PC 환경에서는 넓게 */
         @media (min-width: 768px) {
             .sc-1 { min-width: 180px; max-width: 180px; padding-left: 15px !important; }
             .sc-2 { left: 180px; min-width: 50px; max-width: 50px; font-size: 12px; }
         }
 
-        /* 💡 TOP 스크롤 버튼 */
         #scrollTopBtn {
             display: none;
             position: fixed;
@@ -111,12 +106,12 @@
         <header class="navbar">
             <div class="brand"><i class="fa-solid fa-table-list" style="color:var(--primary)"></i> 실시간 단가표</div>
             <div class="user-info">
+                <!-- 💡 그룹명([A] 등) 노출 삭제 -->
                 <span id="txt-user-name" style="color:#334155; font-size:13px;"></span>
                 <button class="btn btn-outline" style="padding: 6px; font-size: 11px;" onclick="proceedLogout()">로그아웃</button>
             </div>
         </header>
 
-        <!-- 스크롤 감지 영역 -->
         <div class="main-content" id="scroll-area">
             <div class="tab-container">
                 <button id="tab-search" class="tab-btn active" onclick="switchViewMode('search')"><i class="fa-solid fa-magnifying-glass"></i> 맞춤 검색보기</button>
@@ -254,7 +249,7 @@
             "시니어1군": { col: "데이터플랜750MB", label: "데이터플랜750MB(29,000원)" }
         };
 
-        const CACHE_KEY = 'masterDataCacheV9'; 
+        const CACHE_KEY = 'masterDataCacheV10'; 
         const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
         window.addEventListener('DOMContentLoaded', async () => {
@@ -466,10 +461,11 @@
             document.getElementById('login-screen').style.display = 'flex';
         };
 
+        // 💡 로그인 시 상단에 표시되는 그룹 정보 삭제 적용
         async function showMainApp() {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'flex';
-            document.getElementById('txt-user-name').innerHTML = `<b>${currentStore.storeName}</b> ${currentStore.group ? `[${currentStore.group}]` : ''}`;
+            document.getElementById('txt-user-name').innerHTML = `<b>${currentStore.storeName}</b>`;
             await fetchVersions(); 
             loadStorePrices(); 
         }
@@ -662,7 +658,6 @@
             let colorIdx = 0;
 
             if (currentViewMode === 'search') {
-                // 💡 [변경] 표의 넓이를 확보하기 위해 신규/번이/기변 컬럼 너비를 최소 55px로 줄였습니다.
                 thead.innerHTML = `<tr>
                     <th class="sticky-col sc-1">모델 정보 (출고가)</th>
                     <th class="sticky-col sc-2">유형</th>
@@ -678,7 +673,10 @@
                     
                     if (!dataGong || !dataSun) return;
                     
-                    // 💡 [변경] 요청하신 텍스트 포맷으로 변경 및 여백/크기 초압축
+                    const totalGong = dataGong.new + dataGong.mnp + dataGong.chg;
+                    const totalSun = dataSun.new + dataSun.mnp + dataSun.chg;
+                    if(totalGong === 0 && totalSun === 0) return; 
+
                     const subData = getSubsidyForPlan(mName, selectedPlanGroup);
                     const subAmount = subData ? subData.amount : 0;
                     const subLabel = subData ? subData.label : '-';
