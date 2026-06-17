@@ -25,7 +25,6 @@
 
         .app-container { display: none; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* 💡 모바일 세로 스크롤 완벽 최적화 */
         .main-content { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
         .navbar { height: 60px; background: white; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 20; flex-shrink: 0; }
         
@@ -39,7 +38,6 @@
         .tab-btn { flex: 1; padding: 12px 10px; font-size: 14px; font-weight: 700; color: var(--text-sub); background: none; border: none; cursor: pointer; transition: 0.2s; border-radius: 8px; }
         .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 4px rgba(59,130,246,0.2); }
 
-        /* 💡 테이블 카드의 강제 높이 제한(flex:1)을 풀어 세로 스크롤이 짤리지 않게 수정 */
         .table-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); display: flex; flex-direction: column; border: 1px solid var(--border); width: 100%; max-width: 100%; margin-bottom: 20px; flex-shrink: 0; }
         .table-scroll-wrapper { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; background: #ffffff; border-radius: 12px; } 
         table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
@@ -47,21 +45,24 @@
         thead th { position: sticky; top: 0; z-index: 20; background: #f1f5f9 !important; border-bottom: 1px solid var(--border); box-shadow: 0 1px 0 var(--border); font-size: 13px; font-weight: 800; color: #334155; height: 40px; white-space: nowrap; }
         thead tr:nth-child(2) th { top: 40px; background: #f8fafc !important; font-size: 12px; z-index: 19; }
         
-        td, th { padding: 10px 8px; text-align: center; border-right: 1px solid var(--border); white-space: nowrap; }
+        /* 💡 테이블 여백(Padding)을 최소화하여 가로 공간 확보 */
+        td, th { padding: 10px 4px; text-align: center; border-right: 1px solid var(--border); white-space: nowrap; }
         td { border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 700; color: #0f172a; }
 
         .sticky-col { position: sticky; z-index: 5; background-color: inherit; }
         thead th.sticky-col { z-index: 30 !important; } 
-        .sc-1 { left: 0; border-right: 1px solid var(--border); text-align: left; padding-left: 12px; }
+        /* 💡 모델 정보칸 내부 여백 압축 */
+        .sc-1 { left: 0; border-right: 1px solid var(--border); text-align: left; padding-left: 8px !important; padding-right: 4px !important; }
         .sc-2 { border-right: 2px solid #cbd5e1; }
 
-        /* 💡 텍스트가 늘어난 만큼 모델명 칸(sc-1)의 넓이를 넓게 조정 */
-        .sc-1 { min-width: 200px; max-width: 200px; white-space: normal; } 
-        .sc-2 { left: 200px; min-width: 45px; max-width: 45px; font-size: 11px; padding: 0 4px; }
+        /* 💡 핵심: 모델명 칸 넓이를 145px로 줄여 모바일 한 화면 핏 맞춤 */
+        .sc-1 { min-width: 145px; max-width: 145px; white-space: normal; } 
+        .sc-2 { left: 145px; min-width: 40px; max-width: 40px; font-size: 11px; padding: 0 4px !important; }
         
+        /* 태블릿/PC 환경에서는 넓게 */
         @media (min-width: 768px) {
-            .sc-1 { min-width: 240px; max-width: 240px; padding-left: 15px; }
-            .sc-2 { left: 240px; min-width: 50px; max-width: 50px; font-size: 12px; }
+            .sc-1 { min-width: 180px; max-width: 180px; padding-left: 15px !important; }
+            .sc-2 { left: 180px; min-width: 50px; max-width: 50px; font-size: 12px; }
         }
 
         /* 💡 TOP 스크롤 버튼 */
@@ -115,7 +116,7 @@
             </div>
         </header>
 
-        <!-- 스크롤 감지 영역 (id="scroll-area" 추가) -->
+        <!-- 스크롤 감지 영역 -->
         <div class="main-content" id="scroll-area">
             <div class="tab-container">
                 <button id="tab-search" class="tab-btn active" onclick="switchViewMode('search')"><i class="fa-solid fa-magnifying-glass"></i> 맞춤 검색보기</button>
@@ -253,7 +254,7 @@
             "시니어1군": { col: "데이터플랜750MB", label: "데이터플랜750MB(29,000원)" }
         };
 
-        const CACHE_KEY = 'masterDataCacheV8'; 
+        const CACHE_KEY = 'masterDataCacheV9'; 
         const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
         window.addEventListener('DOMContentLoaded', async () => {
@@ -267,7 +268,6 @@
                 showMainApp();
             }
 
-            // 💡 TOP 버튼 스크롤 감지 로직
             const scrollArea = document.getElementById('scroll-area');
             const topBtn = document.getElementById('scrollTopBtn');
             scrollArea.addEventListener('scroll', () => {
@@ -279,17 +279,13 @@
             });
         });
 
-        // 💡 부드럽게 위로 올라가기
         window.scrollToTop = () => {
             document.getElementById('scroll-area').scrollTo({ top: 0, behavior: 'smooth' });
         };
 
         async function loadSubsidyData() {
             try {
-                if (window.location.protocol === 'file:') {
-                    console.warn("로컬 환경에서는 브라우저 보안으로 인해 CSV를 읽을 수 없습니다.");
-                    return;
-                }
+                if (window.location.protocol === 'file:') return;
                 const noCacheUrl = 'subsidy.csv?t=' + new Date().getTime();
                 const res = await fetch(noCacheUrl);
                 
@@ -666,12 +662,13 @@
             let colorIdx = 0;
 
             if (currentViewMode === 'search') {
+                // 💡 [변경] 표의 넓이를 확보하기 위해 신규/번이/기변 컬럼 너비를 최소 55px로 줄였습니다.
                 thead.innerHTML = `<tr>
                     <th class="sticky-col sc-1">모델 정보 (출고가)</th>
                     <th class="sticky-col sc-2">유형</th>
-                    <th style="min-width:70px;">신규</th>
-                    <th style="min-width:70px;">번이</th>
-                    <th style="min-width:70px;">기변</th>
+                    <th style="min-width:55px;">신규</th>
+                    <th style="min-width:55px;">번이</th>
+                    <th style="min-width:55px;">기변</th>
                 </tr>`;
                 
                 matchedModels.forEach(mName => {
@@ -679,24 +676,24 @@
                     const dataGong = matrix[mName]['공'][selectedPlanGroup];
                     const dataSun = matrix[mName]['선'][selectedPlanGroup];
                     
-                    // 💡 [변경] 단가가 0원이어도 무조건 노출되도록 차단 로직(if totalGong===0...) 완전히 삭제!
+                    if (!dataGong || !dataSun) return;
                     
-                    // 💡 [변경] 요청하신 맞춤검색 이통사지원금 완벽 포맷 적용
+                    // 💡 [변경] 요청하신 텍스트 포맷으로 변경 및 여백/크기 초압축
                     const subData = getSubsidyForPlan(mName, selectedPlanGroup);
                     const subAmount = subData ? subData.amount : 0;
                     const subLabel = subData ? subData.label : '-';
                     
                     let subHtml = `
-                        <div style="font-size:11px; color:#475569; margin-top:6px; font-weight:600;">출고가 : ${formatRetail(mInfo.price)}</div>
-                        <div style="font-size:11px; color:#ef4444; margin-top:3px; font-weight:600;">이통사지원금 : ${subAmount > 0 ? (subAmount/10000).toFixed(1) + '만원' : '0.0만원'}</div>
-                        <div style="font-size:11px; color:#64748b; margin-top:3px; font-weight:600; word-break: keep-all; line-height:1.3;">대표요금제 : ${subLabel}</div>
+                        <div style="font-size:11px; color:#475569; margin-top:5px; font-weight:600; letter-spacing:-0.3px;">출고가 : ${formatRetail(mInfo.price)}</div>
+                        <div style="font-size:11px; color:#ef4444; margin-top:2px; font-weight:600; letter-spacing:-0.3px;">이통사지원금 : ${subAmount > 0 ? (subAmount/10000).toFixed(1) + '만원' : '0.0만원'}</div>
+                        <div style="font-size:10px; color:#64748b; margin-top:2px; font-weight:600; word-break: keep-all; line-height:1.2; letter-spacing:-0.5px;">${subLabel}</div>
                     `;
 
                     const bgColor = bgPalette[colorIdx++ % 2]; 
                     let trHTML = `
                         <tr style="background:${bgColor}">
-                            <td rowspan="2" class="sticky-col sc-1 td-model-info" style="background:${bgColor}; padding: 12px 10px;">
-                                <div style="font-weight:800; font-size:13px; color:#1e293b; margin-bottom:2px;">${mName} <span style="font-size:11px; color:#64748b; font-weight:600;">(${mInfo.petName || ''})</span></div>
+                            <td rowspan="2" class="sticky-col sc-1 td-model-info" style="background:${bgColor}">
+                                <div style="font-weight:800; font-size:12px; color:#1e293b; margin-bottom:2px; line-height:1.2; letter-spacing:-0.3px;">${mName} <span style="font-size:10px; color:#64748b; font-weight:600;">(${mInfo.petName || ''})</span></div>
                                 ${subHtml}
                             </td>
                             <td class="sticky-col sc-2 type-gong" style="background:${bgColor}">공시</td>
@@ -710,14 +707,14 @@
                     tbody.insertAdjacentHTML('beforeend', trHTML);
                 });
 
-                if(tbody.innerHTML === '') tbody.innerHTML = `<tr><td colspan="5" style="padding:40px; text-align:center; color:#94a3b8; white-space:normal; line-height:1.5;">해당 조건에 맞는 단가가 없습니다.</td></tr>`;
+                if(tbody.innerHTML === '') tbody.innerHTML = `<tr><td colspan="5" style="padding:40px; text-align:center; color:#94a3b8; white-space:normal; line-height:1.5;">해당 요금제에 등록된 단가가 없습니다.</td></tr>`;
             
             } else {
                 let hRow1 = `<tr><th rowspan="2" class="sticky-col sc-1">모델 정보 (출고가)</th><th rowspan="2" class="sticky-col sc-2">유형</th>`;
                 let hRow2 = `<tr>`;
                 activeColumns.forEach(g => {
                     hRow1 += `<th colspan="3">${g.replace(/군$/, '')}</th>`;
-                    hRow2 += `<th style="min-width:70px;">신규</th><th style="min-width:70px;">번이</th><th style="min-width:70px;">기변</th>`;
+                    hRow2 += `<th style="min-width:55px;">신규</th><th style="min-width:55px;">번이</th><th style="min-width:55px;">기변</th>`;
                 });
                 thead.innerHTML = hRow1 + `</tr>` + hRow2 + `</tr>`;
 
@@ -728,7 +725,7 @@
                         if (matrix[mName]['공'][g].new + matrix[mName]['공'][g].mnp + matrix[mName]['공'][g].chg > 0) hasPrice = true;
                         if (matrix[mName]['선'][g].new + matrix[mName]['선'][g].mnp + matrix[mName]['선'][g].chg > 0) hasPrice = true;
                     });
-                    if (!hasPrice) return; // 전체 단가표 모드에서는 0원짜리 모델을 숨김 유지
+                    if (!hasPrice) return; 
 
                     let subBtnHtml = '';
                     if(subsidyMap[mName]) {
@@ -738,9 +735,8 @@
                     const bgColor = bgPalette[colorIdx++ % 2]; 
                     let trGong = `<tr style="background:${bgColor}">
                         <td rowspan="2" class="sticky-col sc-1 td-model-info" style="background:${bgColor}">
-                            <div class="m-name">${mName}</div>
-                            <div class="m-pet">${mInfo.petName || ''}</div>
-                            <div class="m-price">출고가: ${formatRetail(mInfo.price)}</div>
+                            <div style="font-weight:800; font-size:12px; color:#1e293b; margin-bottom:2px; line-height:1.2; letter-spacing:-0.3px;">${mName} <span style="font-size:10px; color:#64748b; font-weight:600;">(${mInfo.petName || ''})</span></div>
+                            <div style="font-size:11px; color:#475569; margin-top:5px; font-weight:600; letter-spacing:-0.3px;">출고가 : ${formatRetail(mInfo.price)}</div>
                             ${subBtnHtml}
                         </td>
                         <td class="sticky-col sc-2 type-gong" style="background:${bgColor}">공시</td>`;
